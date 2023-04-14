@@ -22,6 +22,8 @@
     type="number"
     step="any"
     @keydown="onNumberFieldKeyDown"
+    @keypress="restrictToNumbers"
+    @blur="event => onNumberBlur(entity.data[descriptor.field_name], event)"
     @input="event => onMetadataFieldChanged(entity, descriptor, event)"
     @keyup.ctrl="
       event =>
@@ -144,6 +146,22 @@ export default {
         this.isCurrentUserManager ||
         this.isSupervisorInDepartments(this.descriptor.departments)
       )
+    }
+  },
+  methods: {
+    restrictToNumbers(event) {
+      if (
+        !['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '-'].includes(
+          event.key
+        )
+      ) {
+        event.preventDefault()
+      }
+    },
+    onNumberBlur(oldValue, event) {
+      if (!event.target.validity.valid) {
+        event.target.value = oldValue
+      }
     }
   }
 }
