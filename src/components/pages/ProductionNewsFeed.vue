@@ -3,76 +3,77 @@
     <div class="column main-column">
       <div class="news page" ref="body" v-scroll="onBodyScroll">
         <div class="timeline-wrapper">
-          <div class="has-text-right filler filter-button">
-            <span @click="toggleFilters">
-              <template v-if="isFiltersDisplayed">
-                {{ $t('main.less_filters') }}
-              </template>
-              <template v-else>
-                {{ $t('main.more_filters') }}
-              </template>
-            </span>
-            &bull;
-
-            <span @click="toggleStats">
-              <template v-if="isStatsDisplayed">
-                {{ $t('news.hide_stats') }}
-              </template>
-              <template v-else>
-                {{ $t('news.show_stats') }}
-              </template>
-            </span>
-          </div>
-
           <div class="filters flexrow">
-            <combobox
-              class="flexrow-item selector"
-              :label="$t('shots.fields.episode')"
-              :options="runningEpisodeOptions"
-              v-model="episodeId"
-              v-show="isTVShow"
-            />
-            <combobox-status
-              class="flexrow-item selector"
-              :label="$t('news.task_status')"
-              :task-status-list="taskStatusList"
-              v-model="taskStatusId"
-            />
-            <combobox-task-type
-              class="flexrow-item selector"
-              :label="$t('news.task_type')"
-              :task-type-list="taskTypeList"
-              v-model="taskTypeId"
-            />
-            <div class="field flexrow-item selector small">
-              <label class="label person-label">
-                {{ $t('main.person') }}
-              </label>
-              <people-field :people="team" :big="true" v-model="person" />
+            <div class="filler flexrow">
+              <combobox
+                class="mb0 episode-field"
+                :label="$t('shots.fields.episode')"
+                :max-width="200"
+                :options="runningEpisodeOptions"
+                v-model="episodeId"
+                v-if="isTVShow"
+              />
+              <combobox-status
+                class="mb0"
+                :label="$t('news.task_status')"
+                :task-status-list="taskStatusList"
+                v-model="taskStatusId"
+              />
+              <combobox-task-type
+                class="mb0"
+                :label="$t('news.task_type')"
+                :task-type-list="taskTypeList"
+                v-model="taskTypeId"
+              />
+              <div>
+                <label class="label person-label">
+                  {{ $t('main.person') }}
+                </label>
+                <people-field
+                  class="person-field small"
+                  :big="true"
+                  :people="team"
+                  v-model="person"
+                />
+              </div>
+              <template v-if="isFiltersDisplayed">
+                <date-field
+                  :disabled-dates="{ from: today }"
+                  :label="$t('main.from')"
+                  :with-margin="false"
+                  v-model="after"
+                />
+                <date-field
+                  :label="$t('main.to')"
+                  :disabled-dates="{ from: today }"
+                  :with-margin="false"
+                  v-model="before"
+                />
+                <combobox
+                  class="mb0"
+                  :label="$t('news.infos')"
+                  :options="previewOptions"
+                  v-model="previewMode"
+                />
+              </template>
             </div>
-          </div>
-
-          <div class="filters flexrow mt1" v-show="isFiltersDisplayed">
-            <date-field
-              class="flexrow-item"
-              :disabled-dates="{ from: today }"
-              :label="$t('main.from')"
-              :with-margin="false"
-              v-model="after"
-            />
-            <date-field
-              class="flexrow-item"
-              :label="$t('main.to')"
-              :disabled-dates="{ from: today }"
-              :with-margin="false"
-              v-model="before"
-            />
-            <combobox
-              class="flexrow-item selector"
-              :label="$t('news.infos')"
-              :options="previewOptions"
-              v-model="previewMode"
-            />
+            <div class="filters-buttons">
+              <span @click="toggleFilters">
+                {{
+                  $t(
+                    isFiltersDisplayed
+                      ? 'main.less_filters'
+                      : 'main.more_filters'
+                  )
+                }}
+              </span>
+              &bull;
+              <span @click="toggleStats">
+                {{
+                  $t(isStatsDisplayed ? 'news.hide_stats' : 'news.show_stats')
+                }}
+              </span>
+            </div>
           </div>
 
           <div class="stats mt1" v-if="isStatsDisplayed">
@@ -363,7 +364,7 @@ export default {
       currentNewsId: null,
       currentPage: 1,
       currentTask: null,
-      episodeId: '',
+      episodeId: 'all',
       isFiltersDisplayed: false,
       isStatsDisplayed: false,
       errors: {
@@ -807,7 +808,7 @@ export default {
 
   .stats {
     .news-number {
-      border: 2px solid $light-grey;
+      border-color: $light-grey;
       color: $light-grey;
     }
   }
@@ -816,13 +817,14 @@ export default {
     background: $dark-grey;
   }
 
+  .filters .filters-buttons span:hover {
+    color: $light-grey;
+  }
+
   .timeline {
     border-color: $blue;
 
-    .dot {
-      background: $blue;
-    }
-
+    .dot,
     .big-dot {
       background: $blue;
     }
@@ -859,6 +861,30 @@ export default {
   height: 100%;
 }
 
+.filters {
+  align-items: flex-start;
+  gap: 1em;
+
+  .filler {
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: inherit;
+  }
+
+  .filters-buttons {
+    color: $grey;
+    margin-top: 7px;
+    text-transform: lowercase;
+    text-align: right;
+    white-space: nowrap;
+
+    span:hover {
+      cursor: pointer;
+      color: $dark-grey;
+    }
+  }
+}
+
 .timeline-wrapper {
   margin: auto;
   max-width: 875px;
@@ -881,25 +907,25 @@ export default {
   .timeline-entry {
     position: relative;
 
+    .dot,
     .big-dot {
       position: absolute;
       display: block;
-      left: -33px;
       top: 3px;
+      border-radius: 50%;
       background: $blue-light;
+    }
+
+    .big-dot {
+      left: -33px;
       width: 12px;
       height: 12px;
-      border-radius: 6px;
     }
 
     .dot {
-      position: absolute;
-      display: block;
       left: -31px;
-      background: $blue-light;
       width: 8px;
       height: 8px;
-      border-radius: 4px;
 
       &.red {
         background: $red;
@@ -919,10 +945,6 @@ export default {
     min-width: 60px;
   }
 
-  .date {
-    min-width: 30px;
-  }
-
   .selected .date {
     color: $dark-grey;
   }
@@ -940,6 +962,7 @@ export default {
 .date {
   font-size: 0.8em;
   color: $grey;
+  min-width: 30px;
 }
 
 .news-info {
@@ -971,7 +994,7 @@ export default {
 }
 
 .preview {
-  margin: 0em auto 2em auto;
+  margin: 0 auto 2em auto;
   max-width: 800px;
 }
 
@@ -981,21 +1004,17 @@ export default {
   max-width: 450px;
 }
 
-.selector {
-  margin-bottom: 0;
-  margin-right: 1em;
+.episode-field {
+  margin-top: 5px;
 }
 
 .person-label {
-  margin-top: 5px;
+  margin-top: 7px;
   margin-bottom: 4px;
 }
 
-.filter-button {
-  color: $grey;
-  cursor: pointer;
-  float: right;
-  text-transform: lowercase;
+.person-field ::v-deep .v-autocomplete {
+  z-index: 501; // +1 relative to the z-index of canvas-wrapper
 }
 
 .stats {

@@ -4,26 +4,19 @@
       {{ label }}
     </label>
     <p class="control" :class="{ 'is-inline': isInline }">
-      <span
-        :class="{
-          select: true,
-          'is-top': this.isTop
-        }"
-      >
+      <span class="select" :class="{ 'is-top': isTop }">
         <select
-          :class="{
-            combobox: true,
-            thin: thin,
-            'select-input': true,
-            error: this.error
-          }"
-          :style="{
-            width: width ? width + 'px' : undefined
-          }"
           ref="select"
+          class="combobox select-input"
+          :class="{ thin, error }"
           :disabled="disabled"
-          @keyup.enter="emitEnter()"
+          :style="{
+            width: width ? `${width}px` : undefined,
+            maxWidth: maxWidth ? `${maxWidth}px` : undefined
+          }"
+          :title="currentOption?.label"
           @change="updateValue"
+          @keyup.enter="emitEnter()"
         >
           <option
             v-for="(option, i) in options"
@@ -60,6 +53,10 @@ export default {
       default: '',
       type: String
     },
+    isInline: {
+      default: false,
+      type: Boolean
+    },
     isTop: {
       default: false,
       type: Boolean
@@ -72,6 +69,9 @@ export default {
       default: false,
       type: Boolean
     },
+    maxWidth: {
+      type: Number
+    },
     thin: {
       default: false,
       type: Boolean
@@ -82,34 +82,26 @@ export default {
     withMargin: {
       default: true,
       type: Boolean
-    },
-    isInline: {
-      default: false,
-      type: Boolean
     }
   },
 
-  computed: {},
+  computed: {
+    currentOption() {
+      return this.options.find(option => option.value === this.value)
+    }
+  },
 
   methods: {
     updateValue() {
-      let value = this.$refs.select.value
-      this.options.forEach(option => {
-        if (option.label === value) {
-          value = option.value
-        }
-      })
-      this.$emit('input', value)
+      const label = this.$refs.select.value
+      const option = this.options.find(option => option.label === label)
+      this.$emit('input', option.value)
     },
 
     emitEnter() {
-      let value = this.$refs.select.value
-      this.options.forEach(option => {
-        if (option.label === value) {
-          value = option.value
-        }
-      })
-      this.$emit('enter', value)
+      const label = this.$refs.select.value
+      const option = this.options.find(option => option.label === label)
+      this.$emit('enter', option.value)
     },
 
     getOptionLabel(option) {
@@ -143,6 +135,8 @@ export default {
 
 .select-input {
   height: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &.thin {
     height: 2.1em;
