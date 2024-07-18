@@ -103,7 +103,7 @@ export const routes = [
           next(nextPath)
         } else {
           timezone.setTimezone()
-          lang.setLocale()
+          lang.setLocale(userStore.state.user.locale)
           if (store.state.productions.openProductions.length === 0) {
             init(err => {
               if (err) {
@@ -140,7 +140,7 @@ export const routes = [
           next(nextPath)
         } else {
           timezone.setTimezone()
-          lang.setLocale()
+          lang.setLocale(userStore.state.user.locale)
           const isProhibited =
             !userStore.getters.isCurrentUserAdmin(userStore.state) &&
             to &&
