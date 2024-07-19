@@ -1081,7 +1081,7 @@ export const routes = [
   },
 
   {
-    path: '/*',
+    path: '/:pathMatch(.*)',
     component: NotFound,
     name: 'not-found'
   }
