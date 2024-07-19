@@ -332,7 +332,7 @@
 </template>
 
 <script>
-import { ImageIcon } from 'lucide-vue'
+import { ImageIcon } from 'lucide-vue-next'
 import { mapGetters, mapActions } from 'vuex'
 
 import drafts from '@/lib/drafts'

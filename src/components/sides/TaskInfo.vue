@@ -303,7 +303,7 @@
 </template>
 
 <script>
-import { CornerRightUpIcon } from 'lucide-vue'
+import { CornerRightUpIcon } from 'lucide-vue-next'
 import moment from 'moment'
 import { mapGetters, mapActions } from 'vuex'
 

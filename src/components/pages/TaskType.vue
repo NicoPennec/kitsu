@@ -250,7 +250,7 @@
 </template>
 
 <script>
-import { CornerLeftUpIcon } from 'lucide-vue'
+import { CornerLeftUpIcon } from 'lucide-vue-next'
 import moment from 'moment'
 import firstBy from 'thenby'
 import { en, fr } from 'vuejs-datepicker/dist/locale'

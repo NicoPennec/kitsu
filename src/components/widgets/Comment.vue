@@ -354,7 +354,7 @@ import {
   LinkIcon,
   PaperclipIcon,
   ThumbsUpIcon
-} from 'lucide-vue'
+} from 'lucide-vue-next'
 
 import files from '@/lib/files'
 import { remove } from '@/lib/models'
