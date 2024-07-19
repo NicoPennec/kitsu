@@ -217,7 +217,7 @@ import {
   CornerUpLeftIcon,
   MessageSquareIcon,
   UserIcon
-} from 'lucide-vue'
+} from 'lucide-vue-next'
 import moment from 'moment-timezone'
 
 import { pluralizeEntityType } from '@/lib/path'
