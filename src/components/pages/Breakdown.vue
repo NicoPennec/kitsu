@@ -537,7 +537,7 @@ export default {
     this.resetColumnWidth()
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('keydown', this.onKeyDown)
   },
 

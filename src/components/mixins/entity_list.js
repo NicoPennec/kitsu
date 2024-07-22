@@ -21,7 +21,7 @@ export const entityListMixin = {
       JSON.parse(localStorage.getItem(this.localStorageStickKey)) || {}
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
   },
