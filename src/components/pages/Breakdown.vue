@@ -277,11 +277,7 @@
 
           <button-simple
             class="flexrow-item"
-            :text="
-              libraryDisplayed
-                ? $t('breakdown.hide_library')
-                : $t('breakdown.show_library')
-            "
+            :text="$t('breakdown.show_library')"
             icon="assets"
             :is-on="libraryDisplayed"
             @click="libraryDisplayed = !libraryDisplayed"
