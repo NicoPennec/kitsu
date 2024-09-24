@@ -83,6 +83,8 @@ export default {
     }
   },
 
+  emits: ['loaded', 'size-changed'],
+
   data() {
     return {
       isLoading: true,

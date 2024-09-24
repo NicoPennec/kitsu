@@ -186,6 +186,8 @@ export default {
     ButtonSimple
   },
 
+  emits: ['confirm'],
+
   data() {
     return {
       formData: null,
@@ -212,6 +214,7 @@ export default {
       }
     }
   },
+
   computed: {
     ...mapGetters([
       'currentProduction',
@@ -220,9 +223,11 @@ export default {
       'isTVShow'
     ])
   },
+
   mounted() {
     this.resetForm()
   },
+
   watch: {
     currentProduction: {
       handler() {
@@ -235,6 +240,7 @@ export default {
       this.updateTvShowRelatedDatas(newProductionType === 'tvshow')
     }
   },
+
   methods: {
     ...mapActions([
       'editProduction',

@@ -550,13 +550,13 @@
             class="playlist-button flexrow-item comparison-list"
             :options="taskTypeOptions"
             v-model="taskTypeToCompare"
-            @input="onTaskTypeToCompareChanged"
+            @update:model-value="onTaskTypeToCompareChanged"
             v-if="isComparing"
           />
           <combobox
             class="playlist-button flexrow-item comparison-list"
             :options="revisionOptions"
-            @input="onRevisionToCompareChanged"
+            @update:model-value="onRevisionToCompareChanged"
             v-model="revisionToCompare"
             v-if="isComparing"
           />
@@ -564,7 +564,7 @@
             class="playlist-button flexrow-item comparison-list"
             :options="comparisonModeOptions"
             v-model="comparisonMode"
-            @input="updateRoomStatus"
+            @update:model-value="updateRoomStatus"
             v-if="isComparing"
           />
           <div
@@ -1013,6 +1013,19 @@ export default {
       default: false
     }
   },
+
+  emits: [
+    'edit-clicked',
+    'entity-to-add',
+    'new-entity-dropped',
+    'order-change',
+    'playlist-deleted',
+    'preview-changed',
+    'save-clicked',
+    'show-add-entities',
+    'remove-entity',
+    'task-type-changed'
+  ],
 
   data() {
     return {
