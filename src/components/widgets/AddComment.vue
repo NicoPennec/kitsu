@@ -77,14 +77,13 @@
             </div>
           </template>
         </template>
-        <textarea-autosize
+        <textarea
           ref="comment-textarea"
           class="textarea flexrow-item"
           :disabled="isLoading"
-          :min-height="50"
-          :max-height="300"
           :placeholder="$t('comments.add_comment')"
-          @keyup.enter.ctrl.native="
+          rows="2"
+          @keyup.enter.ctrl="
             runAddComment(
               text,
               attachments,
@@ -94,7 +93,7 @@
               link
             )
           "
-          @keyup.enter.meta.native="
+          @keyup.enter.meta="
             runAddComment(
               text,
               attachments,
@@ -104,9 +103,10 @@
               link
             )
           "
-          v-model="text"
+          v-autosize
           v-focus
-        />
+          v-model="text"
+        ></textarea>
       </at-ta>
       <div
         class="flexrow link-field"
@@ -579,9 +579,9 @@ export default {
     focus() {
       const textarea = this.$refs['comment-textarea']
       if (textarea) {
-        textarea.$el.focus()
-        const caretPosition = textarea.$el.value.length
-        textarea.$el.setSelectionRange(caretPosition, caretPosition)
+        textarea.focus()
+        const caretPosition = textarea.value.length
+        textarea.setSelectionRange(caretPosition, caretPosition)
       }
     },
 
@@ -811,7 +811,8 @@ article.add-comment {
 
   textarea {
     margin: 0;
-    min-height: 3.5em;
+    min-height: 57px;
+    max-height: 300px;
     border-radius: 0;
 
     &:focus,
