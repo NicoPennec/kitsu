@@ -2,7 +2,7 @@
   <span
     class="field bool-field flexrow"
     :class="{ 'is-true': localValue }"
-    :disabled="disabled"
+    :disabled="disabled || null"
     @click="onClick"
   >
     <span class="icon-wrapper flexrow-item">
