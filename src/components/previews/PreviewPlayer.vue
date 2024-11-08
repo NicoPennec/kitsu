@@ -216,7 +216,6 @@
             @click="onCompareClicked"
             v-if="taskTypeOptions.length > 0 && isComparisonEnabled"
           />
-
           <combobox
             class="comparison-combobox dark"
             :options="taskTypeOptions"
@@ -2007,7 +2006,6 @@ export default {
         if (this.comparisonViewer) this.comparisonViewer.pause()
         this.previewToCompare = this.previewFileMap[this.previewToCompareId]
         if (this.isComparing) {
-          this.setCurrentFrame(this.currentFrame - 1)
           setTimeout(() => {
             this.syncComparisonViewer()
           }, 200)
