@@ -1,10 +1,5 @@
 <template>
-  <div
-    :class="{
-      modal: true,
-      'is-active': active
-    }"
-  >
+  <div class="modal" :class="{ 'is-active': active }">
     <div class="modal-background" @click="$emit('cancel')"></div>
 
     <div class="modal-content">
@@ -17,6 +12,7 @@
           <text-field
             ref="nameField"
             :label="$t('assets.fields.name')"
+            :maxlength="200"
             v-model.trim="form.name"
             @enter="runConfirmation"
             v-focus

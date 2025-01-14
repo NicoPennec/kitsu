@@ -11,11 +11,8 @@
     >
       <input
         ref="input"
-        :class="
-          errored
-            ? 'input flexrow-item errored' + inputClass
-            : 'input flexrow-item' + inputClass
-        "
+        class="input flexrow-item"
+        :class="[inputClass, { errored }]"
         :placeholder="placeholder"
         :type="type"
         :value="modelValue"
@@ -84,7 +81,6 @@ export default {
       type: Number
     },
     maxlength: {
-      default: 524288,
       type: Number
     },
     step: {

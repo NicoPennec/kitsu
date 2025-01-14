@@ -29,7 +29,9 @@
             :title="getDepartment(group).name"
             v-if="group.is_shared && group.department_id"
           ></span>
-          <span>{{ group.name }}</span>
+          <span class="name" :title="group.name">
+            {{ group.name }}
+          </span>
           <chevron-down-icon
             class="chevron ml05"
             :size="12"
@@ -76,7 +78,7 @@
               @click="changeSearch(searchQuery)"
               v-for="searchQuery in group.queries"
             >
-              <span>
+              <span class="name" :title="searchQuery.name">
                 {{ searchQuery.name }}
               </span>
               <button
@@ -118,7 +120,9 @@
         :title="getDepartment(searchQuery).name"
         v-if="searchQuery.is_shared && searchQuery.department_id"
       ></span>
-      {{ searchQuery.name }}
+      <span class="name" :title="searchQuery.name">
+        {{ searchQuery.name }}
+      </span>
       <button
         class="edit"
         @click.stop="editSearch(searchQuery)"
