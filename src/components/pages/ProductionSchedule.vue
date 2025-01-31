@@ -39,6 +39,7 @@
         :is-loading="loading.schedule"
         :is-error="errors.schedule"
         :hide-man-days="true"
+        :subchildren="!isTVShow"
         @item-changed="scheduleItemChanged"
         @estimation-changed="estimationChanged"
         @root-element-expanded="expandTaskTypeElement"
@@ -119,6 +120,8 @@ export default {
       'isCurrentUserSupervisor',
       'isTVShow',
       'organisation',
+      'personMap',
+      'taskMap',
       'taskTypeMap',
       'user'
     ])
@@ -127,6 +130,7 @@ export default {
   methods: {
     ...mapActions([
       'editProduction',
+      'loadAssets',
       'loadAssetTypeScheduleItems',
       'loadEpisodeScheduleItems',
       'loadScheduleItems',
@@ -178,8 +182,8 @@ export default {
               for_entity: taskType.for_entity,
               name: taskType.name,
               priority: taskType.priority,
-              startDate: startDate,
-              endDate: endDate,
+              startDate,
+              endDate,
               editable: this.isInDepartment(taskType),
               expanded: false,
               loading: false,
@@ -238,8 +242,8 @@ export default {
         }
         const scheduleItem = {
           ...item,
-          startDate: startDate,
-          endDate: endDate,
+          startDate,
+          endDate,
           expanded: false,
           loading: false,
           editable: this.isInDepartment(
@@ -260,34 +264,115 @@ export default {
       })
     },
 
-    expandTaskTypeElement(taskTypeElement) {
-      const parameters = {
-        production: this.currentProduction,
-        taskType: this.taskTypeMap.get(taskTypeElement.task_type_id)
-      }
-
+    async expandTaskTypeElement(
+      taskTypeElement,
+      refreshScheduleCallBack = null
+    ) {
       taskTypeElement.expanded = !taskTypeElement.expanded
+
       if (taskTypeElement.expanded) {
-        taskTypeElement.loading = true
-        let action = 'loadAssetTypeScheduleItems'
-        if (taskTypeElement.for_entity === 'Shot') {
-          if (this.isTVShow) action = 'loadEpisodeScheduleItems'
-          else action = 'loadSequenceScheduleItems'
+        try {
+          taskTypeElement.loading = true
+
+          taskTypeElement.children = []
+          taskTypeElement.people = []
+
+          const action =
+            taskTypeElement.for_entity === 'Shot'
+              ? this.isTVShow
+                ? 'loadEpisodeScheduleItems'
+                : 'loadSequenceScheduleItems'
+              : 'loadAssetTypeScheduleItems'
+          const parameters = {
+            production: this.currentProduction,
+            taskType: this.taskTypeMap.get(taskTypeElement.task_type_id)
+          }
+          const scheduleItems = await this[action](parameters)
+
+          const children = this.convertScheduleItems(
+            taskTypeElement,
+            scheduleItems
+          )
+
+          if (this.isTVShow) {
+            // TODO: show episodes on schedule
+
+            taskTypeElement.children = children
+          } else {
+            // group tasks by entity type and assignee
+            const tasksByType = {}
+            const people = {}
+            const currentTaskTypeId = taskTypeElement.task_type_id
+            const assets = await this.loadAssets({ all: true })
+            assets.forEach(asset =>
+              asset.tasks.forEach(taskId => {
+                const task = this.taskMap.get(taskId)
+                if (task.task_type_id === currentTaskTypeId) {
+                  if (!tasksByType[task.entity_type_id]) {
+                    tasksByType[task.entity_type_id] = {}
+                  }
+                  task.assignees.forEach(assigneeId => {
+                    if (!tasksByType[task.entity_type_id][assigneeId]) {
+                      tasksByType[task.entity_type_id][assigneeId] = []
+
+                      people[assigneeId] = this.personMap.get(assigneeId)
+                    }
+
+                    // populate task with start and end dates
+                    let startDate, endDate
+                    if (task.start_date) {
+                      startDate = parseDate(task.start_date)
+                    } else {
+                      startDate = moment()
+                    }
+                    if (
+                      taskTypeElement &&
+                      startDate.isBefore(taskTypeElement.startDate)
+                    ) {
+                      startDate = taskTypeElement.startDate.clone()
+                    }
+                    if (
+                      taskTypeElement &&
+                      startDate.isAfter(taskTypeElement.endDate)
+                    ) {
+                      startDate = taskTypeElement.endDate
+                        .clone()
+                        .add(-1, 'days')
+                    }
+                    if (task.end_date) {
+                      endDate = parseDate(task.end_date)
+                    } else {
+                      endDate = startDate.clone().add(1, 'days')
+                    }
+                    if (endDate.isBefore(startDate)) {
+                      endDate = startDate.clone().add(1, 'days')
+                    }
+                    task.startDate = startDate
+                    task.endDate = endDate
+
+                    tasksByType[task.entity_type_id][assigneeId].push(task)
+                  })
+                }
+              })
+            )
+            children.forEach(assetType => {
+              assetType.children = tasksByType[assetType.object_id]
+            })
+
+            taskTypeElement.children = children
+            taskTypeElement.people = people
+          }
+        } catch (err) {
+          console.error(err)
+          taskTypeElement.children = []
+          taskTypeElement.people = []
+        } finally {
+          taskTypeElement.loading = false
         }
 
-        this[action](parameters)
-          .then(scheduleItems => {
-            taskTypeElement.loading = false
-            taskTypeElement.children = this.convertScheduleItems(
-              taskTypeElement,
-              scheduleItems
-            )
-          })
-          .catch(err => {
-            console.error(err)
-            taskTypeElement.loading = false
-            taskTypeElement.children = []
-          })
+        if (refreshScheduleCallBack) {
+          refreshScheduleCallBack(taskTypeElement)
+        }
       }
     },
 
