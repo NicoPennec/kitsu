@@ -39,6 +39,7 @@
         :is-loading="loading.schedule"
         :is-error="errors.schedule"
         :hide-man-days="true"
+        :subchildren="!isTVShow"
         @item-changed="scheduleItemChanged"
         @estimation-changed="estimationChanged"
         @root-element-expanded="expandTaskTypeElement"
@@ -64,7 +65,12 @@ import moment from 'moment-timezone'
 
 import { getTaskTypeSchedulePath } from '@/lib/path'
 import { sortTaskTypeScheduleItems } from '@/lib/sorting'
-import { daysToMinutes, parseDate } from '@/lib/time'
+import {
+  addBusinessDays,
+  daysToMinutes,
+  minutesToDays,
+  parseDate
+} from '@/lib/time'
 
 import ComboboxNumber from '@/components/widgets/ComboboxNumber.vue'
 import DateField from '@/components/widgets/DateField.vue'
@@ -83,6 +89,7 @@ export default {
   data() {
     return {
       currentTask: null,
+      daysOffByPerson: [],
       // overallManDays: 0,
       endDate: moment().add(6, 'months').endOf('day'),
       scheduleItems: [],
@@ -119,6 +126,8 @@ export default {
       'isCurrentUserSupervisor',
       'isTVShow',
       'organisation',
+      'personMap',
+      'taskMap',
       'taskTypeMap',
       'user'
     ])
@@ -127,6 +136,8 @@ export default {
   methods: {
     ...mapActions([
       'editProduction',
+      'loadAggregatedPersonDaysOff',
+      'loadAssets',
       'loadAssetTypeScheduleItems',
       'loadEpisodeScheduleItems',
       'loadScheduleItems',
@@ -178,8 +189,8 @@ export default {
               for_entity: taskType.for_entity,
               name: taskType.name,
               priority: taskType.priority,
-              startDate: startDate,
-              endDate: endDate,
+              startDate,
+              endDate,
               editable: this.isInDepartment(taskType),
               expanded: false,
               loading: false,
@@ -238,8 +249,8 @@ export default {
         }
         const scheduleItem = {
           ...item,
-          startDate: startDate,
-          endDate: endDate,
+          startDate,
+          endDate,
           expanded: false,
           loading: false,
           editable: this.isInDepartment(
@@ -260,34 +271,158 @@ export default {
       })
     },
 
-    expandTaskTypeElement(taskTypeElement) {
-      const parameters = {
-        production: this.currentProduction,
-        taskType: this.taskTypeMap.get(taskTypeElement.task_type_id)
-      }
-
+    async expandTaskTypeElement(
+      taskTypeElement,
+      refreshScheduleCallBack = null
+    ) {
       taskTypeElement.expanded = !taskTypeElement.expanded
+
       if (taskTypeElement.expanded) {
-        taskTypeElement.loading = true
-        let action = 'loadAssetTypeScheduleItems'
-        if (taskTypeElement.for_entity === 'Shot') {
-          if (this.isTVShow) action = 'loadEpisodeScheduleItems'
-          else action = 'loadSequenceScheduleItems'
+        try {
+          taskTypeElement.loading = true
+
+          taskTypeElement.children = []
+          taskTypeElement.people = []
+
+          const action =
+            taskTypeElement.for_entity === 'Shot'
+              ? this.isTVShow
+                ? 'loadEpisodeScheduleItems'
+                : 'loadSequenceScheduleItems'
+              : 'loadAssetTypeScheduleItems'
+          const parameters = {
+            production: this.currentProduction,
+            taskType: this.taskTypeMap.get(taskTypeElement.task_type_id)
+          }
+          const scheduleItems = await this[action](parameters)
+
+          const children = this.convertScheduleItems(
+            taskTypeElement,
+            scheduleItems
+          )
+
+          if (this.isTVShow) {
+            // TODO: show episodes on schedule
+
+            taskTypeElement.children = children
+          } else {
+            // group tasks by entity type and assignee
+            const tasksByType = {}
+            const people = {}
+            const currentTaskTypeId = taskTypeElement.task_type_id
+            const assets = await this.loadAssets({ all: true })
+
+            // load days off for all assignees
+            const personIds = [
+              ...new Set(
+                assets.flatMap(asset =>
+                  asset.tasks
+                    .map(taskId => this.taskMap.get(taskId))
+                    .filter(task => task?.task_type_id === currentTaskTypeId)
+                    .flatMap(task => task.assignees)
+                )
+              )
+            ]
+            await this.loadDaysOff(personIds)
+
+            assets.forEach(asset =>
+              asset.tasks.forEach(taskId => {
+                const task = this.taskMap.get(taskId)
+                if (task.task_type_id === currentTaskTypeId) {
+                  if (!tasksByType[task.entity_type_id]) {
+                    tasksByType[task.entity_type_id] = {}
+                  }
+                  task.assignees.forEach(assigneeId => {
+                    if (!tasksByType[task.entity_type_id][assigneeId]) {
+                      tasksByType[task.entity_type_id][assigneeId] = []
+                      people[assigneeId] = this.personMap.get(assigneeId)
+                    }
+
+                    // populate task with start and end dates
+
+                    let startDate
+                    if (task.start_date) {
+                      startDate = parseDate(task.start_date)
+                    } else {
+                      startDate = moment()
+                    }
+                    // if (
+                    //   taskTypeElement &&
+                    //   startDate.isBefore(taskTypeElement.startDate)
+                    // ) {
+                    //   startDate = taskTypeElement.startDate.clone()
+                    // }
+                    // if (
+                    //   taskTypeElement &&
+                    //   startDate.isAfter(taskTypeElement.endDate)
+                    // ) {
+                    //   startDate = taskTypeElement.endDate
+                    //     .clone()
+                    //     .add(-1, 'days')
+                    // }
+
+                    let endDate
+                    if (task.due_date) {
+                      endDate = parseDate(task.due_date)
+                    } else if (task.end_date) {
+                      endDate = parseDate(task.end_date)
+                    } else if (task.estimation) {
+                      endDate = addBusinessDays(
+                        task.startDate,
+                        Math.ceil(
+                          minutesToDays(this.organisation, task.estimation)
+                        ) - 1,
+                        this.daysOffByPerson[assigneeId]
+                      )
+                    }
+                    if (!endDate || endDate.isBefore(startDate)) {
+                      const nbDays = startDate.isoWeekday() === 5 ? 3 : 1
+                      endDate = startDate.clone().add(nbDays, 'days')
+                    }
+                    if (!endDate.isSameOrAfter(startDate)) {
+                      const nbDays = startDate.isoWeekday() === 5 ? 3 : 1
+                      endDate = startDate.clone().add(nbDays, 'days')
+                    }
+
+                    task.startDate = startDate
+                    task.endDate = endDate
+
+                    tasksByType[task.entity_type_id][assigneeId].push(task)
+                  })
+                }
+              })
+            )
+            children.forEach(assetType => {
+              assetType.children = tasksByType[assetType.object_id]
+            })
+
+            taskTypeElement.children = children
+            taskTypeElement.people = people
+          }
+        } catch (err) {
+          console.error(err)
+          taskTypeElement.children = []
+          taskTypeElement.people = []
+        } finally {
+          taskTypeElement.loading = false
         }
 
-        this[action](parameters)
-          .then(scheduleItems => {
-            taskTypeElement.loading = false
-            taskTypeElement.children = this.convertScheduleItems(
-              taskTypeElement,
-              scheduleItems
-            )
-          })
-          .catch(err => {
-            console.error(err)
-            taskTypeElement.loading = false
-            taskTypeElement.children = []
-          })
+        if (refreshScheduleCallBack) {
+          refreshScheduleCallBack(taskTypeElement)
+        }
+      }
+    },
+
+    async loadDaysOff(personIds) {
+      this.daysOffByPerson = []
+      for (const personId of personIds) {
+        // load sequentially to avoid too many requests
+        const daysOff = await this.loadAggregatedPersonDaysOff({
+          personId
+        }).catch(
+          () => [] // fallback if not allowed to fetch days off
+        )
+        this.daysOffByPerson[personId] = daysOff
       }
     },
 
