@@ -269,8 +269,8 @@ export default {
     return client.pdel(`/api/data/user/filter-groups/${filterGroup.id}`)
   },
 
-  getUserSearchFilters(callback) {
-    client.get('/api/data/user/filters', callback)
+  getUserSearchFilters() {
+    return client.pget('/api/data/user/filters')
   },
 
   updateFilter(searchFilter) {

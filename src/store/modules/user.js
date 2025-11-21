@@ -343,19 +343,15 @@ const actions = {
     commit(UPDATE_USER_FILTER, searchFilter)
   },
 
-  loadUserSearchFilters({ commit }, callback) {
-    peopleApi.getUserSearchFilters((err, searchFilters) => {
-      if (err) commit(LOAD_USER_FILTERS_ERROR)
-      else commit(LOAD_USER_FILTERS_END, searchFilters)
-      callback(err)
-    })
-    // return peopleApi.getUserSearchFilters()
-    // .then((searchFilters) => {
-    //   commit(LOAD_USER_FILTERS_END, searchFilters);
-    // })
-    // .catch((err) => {
-    //   commit(LOAD_USER_FILTERS_ERROR);
-    // })
+  async loadUserSearchFilters({ commit }) {
+    try {
+      const searchFilters = await peopleApi.getUserSearchFilters()
+      commit(LOAD_USER_FILTERS_END, searchFilters)
+      return searchFilters
+    } catch (err) {
+      commit(LOAD_USER_FILTERS_ERROR)
+      throw err
+    }
   },
 
   saveTodoSearch({ commit, rootGetters }, searchQuery) {
