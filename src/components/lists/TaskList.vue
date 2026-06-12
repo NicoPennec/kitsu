@@ -242,13 +242,40 @@
               </template>
             </td>
             <td class="real-start-date" v-if="!withSchedule">
-              {{ formatDate(task.real_start_date) }}
+              <date-field
+                class="flexrow-item"
+                :with-margin="false"
+                :model-value="getDate(task.real_start_date)"
+                @update:model-value="updateRealStartDate"
+                v-if="isInDepartment(task) && selectionGrid[task.id]"
+              />
+              <template v-else>
+                {{ formatDate(task.real_start_date) }}
+              </template>
             </td>
             <td class="real-end-date" v-if="!withSchedule">
-              {{ formatDate(task.end_date) }}
+              <date-field
+                class="flexrow-item"
+                :with-margin="false"
+                :model-value="getDate(task.end_date)"
+                @update:model-value="updateRealEndDate"
+                v-if="isInDepartment(task) && selectionGrid[task.id]"
+              />
+              <template v-else>
+                {{ formatDate(task.end_date) }}
+              </template>
             </td>
             <td class="done-date" v-if="!withSchedule">
-              {{ formatDate(task.done_date) }}
+              <date-field
+                class="flexrow-item"
+                :with-margin="false"
+                :model-value="getDate(task.done_date)"
+                @update:model-value="updateDoneDate"
+                v-if="isInDepartment(task) && selectionGrid[task.id]"
+              />
+              <template v-else>
+                {{ formatDate(task.done_date) }}
+              </template>
             </td>
             <td class="last-comment-date" v-if="!withSchedule">
               {{ formatDate(task.last_comment_date) }}
@@ -599,9 +626,18 @@ export default {
     isTaskChanged(task, data) {
       const taskStart = task.start_date ? task.start_date.substring(0, 10) : ''
       const taskDue = task.due_date ? task.due_date.substring(0, 10) : ''
+      const taskRealStart = task.real_start_date
+        ? task.real_start_date.substring(0, 10)
+        : ''
+      const taskEnd = task.end_date ? task.end_date.substring(0, 10) : ''
+      const taskDone = task.done_date ? task.done_date.substring(0, 10) : ''
       return (
         (data.start_date !== undefined && taskStart !== data.start_date) ||
         (data.due_date !== undefined && taskDue !== data.due_date) ||
+        (data.real_start_date !== undefined &&
+          taskRealStart !== data.real_start_date) ||
+        (data.end_date !== undefined && taskEnd !== data.end_date) ||
+        (data.done_date !== undefined && taskDone !== data.done_date) ||
         (data.estimation !== undefined &&
           task.estimation !== data.estimation) ||
         (data.difficulty !== undefined &&
@@ -690,6 +726,42 @@ export default {
             start_date: task.start_date,
             due_date: null
           }
+        }
+        if (this.isTaskChanged(task, data)) {
+          this.updateTask({ taskId, data }).catch(console.error)
+        }
+      })
+    },
+
+    updateRealStartDate(date) {
+      Object.keys(this.selectionGrid).forEach(taskId => {
+        const task = this.taskMap.get(taskId)
+        const data = {
+          real_start_date: date ? formatSimpleDate(moment(date)) : null
+        }
+        if (this.isTaskChanged(task, data)) {
+          this.updateTask({ taskId, data }).catch(console.error)
+        }
+      })
+    },
+
+    updateRealEndDate(date) {
+      Object.keys(this.selectionGrid).forEach(taskId => {
+        const task = this.taskMap.get(taskId)
+        const data = {
+          end_date: date ? formatSimpleDate(moment(date)) : null
+        }
+        if (this.isTaskChanged(task, data)) {
+          this.updateTask({ taskId, data }).catch(console.error)
+        }
+      })
+    },
+
+    updateDoneDate(date) {
+      Object.keys(this.selectionGrid).forEach(taskId => {
+        const task = this.taskMap.get(taskId)
+        const data = {
+          done_date: date ? formatSimpleDate(moment(date)) : null
         }
         if (this.isTaskChanged(task, data)) {
           this.updateTask({ taskId, data }).catch(console.error)
@@ -1021,7 +1093,10 @@ th.due-date {
 }
 
 td.start-date,
-td.due-date {
+td.due-date,
+td.real-start-date,
+td.real-end-date,
+td.done-date {
   text-align: center;
   margin: 0;
   padding: 0;
