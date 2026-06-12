@@ -344,19 +344,46 @@
               class="real-start-date"
               v-if="!withSchedule && isColumnVisible('realStartDate')"
             >
-              {{ formatDisplayDate(task.real_start_date) }}
+              <date-field
+                class="flexrow-item"
+                :with-margin="false"
+                :model-value="getDate(task.real_start_date)"
+                @update:model-value="updateRealStartDate"
+                v-if="isInDepartment(task) && selectionGrid[task.id]"
+              />
+              <template v-else>
+                {{ formatDisplayDate(task.real_start_date) }}
+              </template>
             </td>
             <td
               class="real-end-date"
               v-if="!withSchedule && isColumnVisible('realEndDate')"
             >
-              {{ formatDisplayDate(task.end_date) }}
+              <date-field
+                class="flexrow-item"
+                :with-margin="false"
+                :model-value="getDate(task.end_date)"
+                @update:model-value="updateRealEndDate"
+                v-if="isInDepartment(task) && selectionGrid[task.id]"
+              />
+              <template v-else>
+                {{ formatDisplayDate(task.end_date) }}
+              </template>
             </td>
             <td
               class="done-date"
               v-if="!withSchedule && isColumnVisible('doneDate')"
             >
-              {{ formatDisplayDate(task.done_date) }}
+              <date-field
+                class="flexrow-item"
+                :with-margin="false"
+                :model-value="getDate(task.done_date)"
+                @update:model-value="updateDoneDate"
+                v-if="isInDepartment(task) && selectionGrid[task.id]"
+              />
+              <template v-else>
+                {{ formatDisplayDate(task.done_date) }}
+              </template>
             </td>
             <td
               class="last-comment-date"
@@ -735,9 +762,18 @@ const getTaskName = task => {
 const isTaskChanged = (task, data) => {
   const taskStart = task.start_date ? task.start_date.substring(0, 10) : ''
   const taskDue = task.due_date ? task.due_date.substring(0, 10) : ''
+  const taskRealStart = task.real_start_date
+    ? task.real_start_date.substring(0, 10)
+    : ''
+  const taskEnd = task.end_date ? task.end_date.substring(0, 10) : ''
+  const taskDone = task.done_date ? task.done_date.substring(0, 10) : ''
   return (
     (data.start_date !== undefined && taskStart !== data.start_date) ||
     (data.due_date !== undefined && taskDue !== data.due_date) ||
+    (data.real_start_date !== undefined &&
+      taskRealStart !== data.real_start_date) ||
+    (data.end_date !== undefined && taskEnd !== data.end_date) ||
+    (data.done_date !== undefined && taskDone !== data.done_date) ||
     (data.estimation !== undefined && task.estimation !== data.estimation) ||
     (data.difficulty !== undefined && task.difficulty !== data.difficulty) ||
     (data.nb_drawings !== undefined && task.nb_drawings !== data.nb_drawings)
@@ -825,6 +861,20 @@ const updateDueDate = date => {
       minutesToDays(organisation.value, task.estimation)
     )
   })
+}
+
+const updateRealStartDate = date => {
+  updateTasksData({
+    real_start_date: date ? formatSimpleDate(moment(date)) : null
+  })
+}
+
+const updateRealEndDate = date => {
+  updateTasksData({ end_date: date ? formatSimpleDate(moment(date)) : null })
+}
+
+const updateDoneDate = date => {
+  updateTasksData({ done_date: date ? formatSimpleDate(moment(date)) : null })
 }
 
 const updateTasksEstimation = ({ estimation }) => {
@@ -1161,7 +1211,10 @@ th.due-date {
 }
 
 td.start-date,
-td.due-date {
+td.due-date,
+td.real-start-date,
+td.real-end-date,
+td.done-date {
   text-align: center;
   margin: 0;
   padding: 0;
