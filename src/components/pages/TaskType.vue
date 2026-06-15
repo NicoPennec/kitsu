@@ -1043,6 +1043,9 @@ export default {
         'Estimation',
         'Start date',
         'Due date',
+        'WIP date',
+        'Feedback date',
+        'Approval date',
         'Difficulty'
       ]
       if (this.isPaperProduction) {
