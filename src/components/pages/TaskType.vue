@@ -875,7 +875,15 @@ const dataMatchers = computed(() =>
 )
 
 const optionalColumns = computed(() => {
-  const columns = ['Estimation', 'Start date', 'Due date', 'Difficulty']
+  const columns = [
+    'Estimation',
+    'Start date',
+    'Due date',
+    'WIP date',
+    'Feedback date',
+    'Approval date',
+    'Difficulty'
+  ]
   if (isPaperProduction.value) columns.unshift('Drawings')
   if (['Sequence', 'Edit'].includes(currentTaskType.value?.for_entity)) {
     columns.unshift('Parent')

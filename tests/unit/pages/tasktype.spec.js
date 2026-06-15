@@ -1483,7 +1483,15 @@ describe('TaskType page', () => {
       }
     }
 
-    const optionalColumns = ['Estimation', 'Start date', 'Due date', 'Difficulty']
+    const optionalColumns = [
+      'Estimation',
+      'Start date',
+      'Due date',
+      'WIP date',
+      'Feedback date',
+      'Approval date',
+      'Difficulty'
+    ]
 
     it.each(['Asset', 'Shot'])(
       'require the parent and the entity of the %s task types',
