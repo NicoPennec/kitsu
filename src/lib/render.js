@@ -1,6 +1,6 @@
+import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { markedEmoji } from 'marked-emoji'
-import sanitizeHTML from 'sanitize-html'
 
 import emojis from '@/lib/emojis'
 import { formatTime } from '@/lib/video'
@@ -13,25 +13,64 @@ marked.use(markedEmoji(markedEmojiOptions))
 
 export const TIME_CODE_REGEX = /v(\d+) (\d+:)?(\d+):(\d+)(\.|:)(\d+) \((\d+)\)/g
 
+// stricter than DOMPurify's defaults, which would let user content embed
+// style, form, input, media and svg tags
+const BASE_ALLOWED_TAGS = (
+  'address article aside footer header h1 h2 h3 h4 h5 h6 hgroup main nav ' +
+  'section blockquote dd div dl dt figcaption figure hr li menu ol p pre ul ' +
+  'a abbr b bdi bdo br cite code data dfn em i kbd mark q rb rp rt rtc ruby ' +
+  's samp small span strong sub sup time u var wbr caption col colgroup ' +
+  'table tbody td tfoot th thead tr'
+).split(' ')
+
+// ALLOWED_ATTR below applies to every tag; restrict each attribute to the
+// tags where it is meaningful.
+const ALLOWED_ATTRIBUTES = {
+  a: ['class', 'href'],
+  img: ['src']
+}
+
+// Keep link/image URLs to these schemes; DOMPurify's defaults would also let
+// through sms:, callto:, cid:, xmpp:, matrix: links and data: images.
+const ALLOWED_URI_SCHEMES = ['http', 'https', 'ftp', 'mailto', 'tel']
+const URI_SCHEME_REGEX = /^([a-z][a-z0-9+.-]*):/
+const ATTR_WHITESPACE_REGEX =
+  // eslint-disable-next-line no-control-regex
+  /[\u0000-\u0020\u00a0\u1680\u180e\u2000-\u2029\u205f\u3000]/g
+
+DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
+  const allowedAttributes = ALLOWED_ATTRIBUTES[node.nodeName.toLowerCase()]
+  if (!allowedAttributes?.includes(data.attrName)) {
+    data.keepAttr = false
+    return
+  }
+  if (data.attrName === 'href' || data.attrName === 'src') {
+    const value = data.attrValue.replace(ATTR_WHITESPACE_REGEX, '')
+    const scheme = URI_SCHEME_REGEX.exec(value.toLowerCase())?.[1]
+    if (scheme && !ALLOWED_URI_SCHEMES.includes(scheme)) {
+      data.keepAttr = false
+    }
+  }
+})
+
 export const sanitize = (html, options) => {
   options = {
     allowedLinkTag: true,
     allowedImageTag: true,
     ...options
   }
-  let allowedTags = [...sanitizeHTML.defaults.allowedTags]
-  if (!options.allowedLinkTag) {
-    allowedTags = allowedTags.filter(tag => tag !== 'a')
-  }
+  const allowedTags = BASE_ALLOWED_TAGS.filter(
+    tag => options.allowedLinkTag || tag !== 'a'
+  )
   if (options.allowedImageTag) {
     allowedTags.push('img')
   }
-  return sanitizeHTML(html, {
-    allowedTags,
-    allowedAttributes: {
-      a: ['class', 'href'],
-      img: ['src']
-    }
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: allowedTags,
+    ALLOWED_ATTR: ['class', 'href', 'src'],
+    ALLOW_DATA_ATTR: false,
+    // Drop the text content of these tags, not just the tags themselves.
+    ADD_FORBID_CONTENTS: ['textarea', 'option']
   })
 }
 

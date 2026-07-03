@@ -61,11 +61,39 @@ describe('render', () => {
       'Text **bold** <img onerror="console.log(\'test\')" src="picture.png" />'
     let result = renderMarkdown(input)
     expect(result.trim()).toEqual(
-      '<p>Text <strong>bold</strong> <img src="picture.png" /></p>')
+      '<p>Text <strong>bold</strong> <img src="picture.png"></p>')
     input = 'Text **bold** <img src="picture.png" />'
     result = renderMarkdown(input)
     expect(result.trim()).toEqual(
-      '<p>Text <strong>bold</strong> <img src="picture.png" /></p>')
+      '<p>Text <strong>bold</strong> <img src="picture.png"></p>')
+  })
+
+  test('renderMarkdown - attributes scoped per tag', () => {
+    let input = 'Text <span class="timecode">fake</span>'
+    let result = renderMarkdown(input)
+    expect(result.trim()).toEqual('<p>Text <span>fake</span></p>')
+    input = 'Text <a class="mention" href="https://cg-wire.com">link</a>'
+    result = renderMarkdown(input)
+    expect(result.trim()).toEqual(
+      '<p>Text <a class="mention" href="https://cg-wire.com">link</a></p>'
+    )
+  })
+
+  test('renderMarkdown - URL schemes', () => {
+    let input = '[sms](sms:+123456) [web](https://cg-wire.com)'
+    let result = renderMarkdown(input)
+    expect(result.trim()).toEqual(
+      '<p><a>sms</a> <a href="https://cg-wire.com">web</a></p>'
+    )
+    input = 'Text <img src="data:image/png;base64,AAAA" />'
+    result = renderMarkdown(input)
+    expect(result.trim()).toEqual('<p>Text <img></p>')
+  })
+
+  test('renderMarkdown - non-text tags dropped with their content', () => {
+    const input = 'Text <textarea>draft</textarea><option>opt</option>'
+    const result = renderMarkdown(input)
+    expect(result.trim()).toEqual('<p>Text </p>')
   })
 
   test('renderFileSize', () => {
