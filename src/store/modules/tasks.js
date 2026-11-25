@@ -398,7 +398,11 @@ const actions = {
         'registerPreviewFileStatuses',
         comments.flatMap(comment => comment.previews || [])
       )
-      return dispatch('loadTaskEntityPreviewFiles', entityId)
+      // Only the comparison of the player reads them, and their annotations
+      // can take long to come: the comments do not wait for them.
+      dispatch('loadTaskEntityPreviewFiles', entityId).catch(
+        errors.logRequestFailure
+      )
     })
   },
 

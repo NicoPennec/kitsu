@@ -1135,6 +1135,51 @@ describe('Tasks store, preview file statuses', () => {
   })
 })
 
+// Only the comparison of the player reads the preview files of the entity,
+// which carry the annotations of every revision and can take long to come.
+describe('Tasks store, comments of a task', () => {
+  const load = dispatch =>
+    tasksStore.actions.loadTaskComments(
+      { commit: vi.fn(), dispatch },
+      { taskId: 'task-1', entityId: 'entity-1' }
+    )
+  const previewFilesLoad = result => type =>
+    type === 'loadTaskEntityPreviewFiles' ? result() : Promise.resolve()
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test('the comments do not wait for the preview files of the entity', async () => {
+    tasksApi.getTaskComments.mockResolvedValueOnce([{ id: 'comment-1' }])
+    const dispatch = vi.fn(previewFilesLoad(() => new Promise(() => {})))
+
+    const state = await Promise.race([
+      load(dispatch).then(() => 'loaded'),
+      new Promise(resolve => setTimeout(() => resolve('pending')))
+    ])
+
+    expect(state).toBe('loaded')
+    expect(dispatch).toHaveBeenCalledWith(
+      'loadTaskEntityPreviewFiles',
+      'entity-1'
+    )
+  })
+
+  test('a failed load of the preview files of the entity keeps the comments', async () => {
+    tasksApi.getTaskComments.mockResolvedValueOnce([{ id: 'comment-1' }])
+    const failure = new Error('Response timeout of 60000ms exceeded')
+    errors.markRequestFailure(failure)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const dispatch = vi.fn(previewFilesLoad(() => Promise.reject(failure)))
+
+    await load(dispatch)
+    await new Promise(resolve => setTimeout(resolve))
+
+    expect(consoleError).toHaveBeenCalledWith(failure)
+  })
+})
+
 // The caller hands over the files to upload: no other panel can change them
 // while a long upload runs.
 describe('Tasks store, preview uploads', () => {
